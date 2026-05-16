@@ -27,8 +27,13 @@ from . import runner
 APP_ROOT = Path(__file__).resolve().parent
 TEMPLATES = Jinja2Templates(directory=str(APP_ROOT / "templates"))
 
+# Belt-and-suspenders: ensure the static dir exists before mounting so the
+# server doesn't crash at boot on ephemeral filesystems.
+STATIC_DIR = APP_ROOT / "static"
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+
 app = FastAPI(title="California Fruit Inc — Sorting Quality Verifier")
-app.mount("/static", StaticFiles(directory=str(APP_ROOT / "static")), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 @app.get("/healthz")
