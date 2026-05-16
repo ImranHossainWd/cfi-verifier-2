@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Either set ANTHROPIC_API_KEY in a sibling .env file, or export it
+      # in your shell before running `docker compose up`.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      # Persist job state + uploads + outputs across container restarts.
+      - ./data:/app/data
+    restart: unless-stopped

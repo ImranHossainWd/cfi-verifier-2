@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: cfi-verifier
+    runtime: docker
+    plan: starter        # starter ($7/mo) supports persistent disks; free tier does not
+    autoDeploy: true
+    healthCheckPath: /healthz
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false      # set this in the Render dashboard after the first deploy
+    disk:
+      name: cfi-data
+      mountPath: /app/data
+      sizeGB: 5

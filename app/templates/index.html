@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>California Fruit Inc — Sorting Quality Verifier</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --brand:        #a82237;
+    --brand-dark:   #7d1929;
+    --brand-cream:  #f0dcaa;
+    --green:#16a34a; --green-bg:#dcfce7;
+    --orange:#ea580c; --orange-bg:#ffedd5;
+    --red:#dc2626; --red-bg:#fee2e2;
+    --blue:#2563eb; --blue-bg:#dbeafe;
+    --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0;
+    --slate-400:#94a3b8; --slate-600:#475569; --slate-700:#334155;
+    --slate-900:#0f172a;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--slate-50); color: var(--slate-900); min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+    color: #fff; padding: 20px 32px; border-bottom: 4px solid var(--brand-cream);
+  }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  header p { font-size: 13px; opacity: .85; margin-top: 3px; }
+  .header-row { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .key-badge { font-size: 12px; padding: 6px 12px; border-radius: 16px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); }
+  .key-badge.warn { background: rgba(255,200,100,.2); border-color: rgba(255,200,100,.5); }
+
+  main { max-width: 1400px; margin: 24px auto; padding: 0 32px 60px; display: grid; grid-template-columns: 1fr; gap: 24px; }
+
+  .card {
+    background: #fff; border: 1px solid var(--slate-200); border-radius: 14px;
+    padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: var(--slate-700); }
+  .card h2 .pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 16px; background: var(--slate-100); color: var(--slate-700); margin-left: 8px; }
+
+  /* drop zone */
+  .dropzone {
+    border: 2px dashed var(--slate-200); border-radius: 12px; padding: 40px 24px;
+    text-align: center; cursor: pointer; transition: all .15s;
+    background: var(--slate-50);
+  }
+  .dropzone:hover { border-color: var(--brand); background: #fff; }
+  .dropzone.dragging { border-color: var(--brand); background: #fdf2f4; }
+  .dropzone .big { font-size: 18px; font-weight: 600; color: var(--slate-700); margin-bottom: 6px; }
+  .dropzone .small { font-size: 13px; color: var(--slate-400); }
+  .dropzone input[type=file] { display: none; }
+  .upload-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 16px; font-size: 13px; }
+  .upload-row label { display: flex; align-items: center; gap: 6px; color: var(--slate-600); }
+  select, input[type=checkbox] { font-size: 13px; }
+
+  /* job cards */
+  .jobs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+  .job {
+    border: 1px solid var(--slate-200); border-radius: 12px; padding: 16px;
+    background: #fff; transition: all .15s;
+  }
+  .job-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .job-filename { font-weight: 600; font-size: 14px; color: var(--slate-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .status { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 16px; text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0; }
+  .status.queued, .status.running { background: var(--blue-bg); color: var(--blue); }
+  .status.done.pass { background: var(--green-bg); color: var(--green); }
+  .status.done.fail { background: var(--orange-bg); color: var(--orange); }
+  .status.failed { background: var(--red-bg); color: var(--red); }
+  .job-meta { font-size: 12px; color: var(--slate-600); margin-bottom: 10px; }
+  .tally { display: flex; gap: 8px; margin-top: 8px; font-size: 12px; }
+  .tally span { padding: 3px 8px; border-radius: 6px; }
+  .tally .p { background: var(--green-bg); color: var(--green); }
+  .tally .f { background: var(--orange-bg); color: var(--orange); }
+  .tally .i { background: var(--blue-bg); color: var(--blue); }
+  .job-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .job-actions a, .job-actions button {
+    font-size: 12px; padding: 6px 10px; border-radius: 8px; text-decoration: none;
+    background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-200);
+    cursor: pointer;
+  }
+  .job-actions a:hover, .job-actions button:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .job-error { background: var(--red-bg); color: var(--red); padding: 10px; border-radius: 8px; font-size: 12px; margin-top: 8px; white-space: pre-wrap; font-family: monospace; max-height: 200px; overflow: auto; }
+
+  /* detail view */
+  .empty { text-align: center; padding: 32px; color: var(--slate-400); font-size: 14px; }
+  #detail { display: none; }
+  #detail.show { display: block; }
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+    background: #fff; border: 1px solid var(--slate-200); cursor: pointer; font-weight: 600; font-size: 13px;
+    color: var(--slate-700); margin-bottom: 16px;
+  }
+  .back-btn:hover { background: var(--slate-100); }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .stat { padding: 12px 16px; background: var(--slate-50); border-radius: 10px; }
+  .stat-label { font-size: 11px; text-transform: uppercase; color: var(--slate-600); font-weight: 600; letter-spacing: .5px; }
+  .stat-value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .sp-table, .flag-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  .sp-table th, .sp-table td, .flag-table th, .flag-table td { padding: 8px; border-bottom: 1px solid var(--slate-100); text-align: left; }
+  .sp-table th, .flag-table th { background: var(--slate-50); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--slate-600); }
+  .flag-row.fail { background: var(--orange-bg); }
+  .flag-row.info { background: var(--blue-bg); }
+  .preview-pdf { width: 100%; height: 70vh; border: 1px solid var(--slate-200); border-radius: 10px; margin-top: 10px; }
+  .toast {
+    position: fixed; right: 20px; bottom: 20px; padding: 12px 18px; border-radius: 10px;
+    background: var(--slate-900); color: #fff; font-size: 13px; z-index: 1000;
+    transform: translateY(20px); opacity: 0; transition: all .2s;
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { background: var(--red); }
+  .progress-bar { height: 4px; background: var(--slate-100); border-radius: 2px; overflow: hidden; margin-top: 10px; }
+  .progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-cream)); animation: progress 1.5s ease-in-out infinite; }
+  @keyframes progress {
+    0%   { width: 0%; margin-left: 0; }
+    50%  { width: 60%; margin-left: 20%; }
+    100% { width: 0%; margin-left: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-row">
+    <div>
+      <h1>California Fruit Inc — AI Sorting Quality Verifier</h1>
+      <p>Upload a packet PDF → OCR + cross-reference + marked-up output</p>
+    </div>
+    {% if has_anthropic_key %}
+      <span class="key-badge">Anthropic key configured ✓</span>
+    {% else %}
+      <span class="key-badge warn">⚠ ANTHROPIC_API_KEY not set</span>
+    {% endif %}
+  </div>
+</header>
+
+<main>
+  <div id="list-view">
+    <section class="card">
+      <h2>Upload a packet</h2>
+      <label class="dropzone" id="dropzone">
+        <div class="big">Drop a packet PDF here, or click to choose</div>
+        <div class="small">Renders → OCRs → splits sub-packets → cross-references → marks up. ~60–90 sec per packet.</div>
+        <input type="file" id="file-input" accept="application/pdf">
+      </label>
+      <div class="upload-row">
+        <label>OCR provider:
+          <select id="provider">
+            <option value="anthropic" selected>Anthropic (real handwriting OCR)</option>
+            <option value="mock">Mock (offline cache — sample packets only)</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="use-cache" checked> Use vision cache (free re-runs of the same packet)</label>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top: 24px;">
+      <h2>Jobs <span class="pill" id="jobs-count">0</span></h2>
+      <div id="jobs-grid" class="jobs-grid">
+        <div class="empty">No verifications yet — upload a packet above to get started.</div>
+      </div>
+    </section>
+  </div>
+
+  <div id="detail">
+    <button class="back-btn" onclick="showList()">← Back to all jobs</button>
+    <div id="detail-body"></div>
+  </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const dropzone = $("dropzone");
+const fileInput = $("file-input");
+const jobsGrid = $("jobs-grid");
+const jobsCount = $("jobs-count");
+const detail = $("detail");
+const detailBody = $("detail-body");
+const listView = $("list-view");
+const toast = $("toast");
+
+let currentJobs = [];
+let detailJobId = null;
+let pollTimer = null;
+
+function showToast(msg, isError) {
+  toast.textContent = msg;
+  toast.classList.toggle("error", !!isError);
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3000);
+}
+
+function showList() {
+  detailJobId = null;
+  detail.classList.remove("show");
+  listView.style.display = "block";
+}
+
+function showDetail(jobId) {
+  detailJobId = jobId;
+  listView.style.display = "none";
+  detail.classList.add("show");
+  renderDetail();
+}
+
+dropzone.addEventListener("click", () => fileInput.click());
+dropzone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  dropzone.classList.add("dragging");
+});
+dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragging"));
+dropzone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropzone.classList.remove("dragging");
+  const f = e.dataTransfer.files[0];
+  if (f) upload(f);
+});
+fileInput.addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  if (f) upload(f);
+  fileInput.value = "";
+});
+
+async function upload(file) {
+  if (!file.name.toLowerCase().endsWith(".pdf")) {
+    showToast("Please choose a PDF file.", true);
+    return;
+  }
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("ocr_provider", $("provider").value);
+  fd.append("use_cache", $("use-cache").checked ? "true" : "false");
+  showToast(`Uploading ${file.name}…`);
+  try {
+    const r = await fetch("/api/upload", { method: "POST", body: fd });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.detail || r.statusText);
+    }
+    const j = await r.json();
+    showToast(`Queued: ${j.filename}`);
+    await refresh();
+  } catch (e) {
+    showToast(`Upload failed: ${e.message}`, true);
+  }
+}
+
+async function refresh() {
+  try {
+    const r = await fetch("/api/jobs");
+    const data = await r.json();
+    currentJobs = data.jobs;
+    renderList();
+    if (detailJobId) renderDetail();
+    // Keep polling while any job is queued/running
+    const anyActive = currentJobs.some(j => j.status === "queued" || j.status === "running");
+    if (anyActive && !pollTimer) {
+      pollTimer = setInterval(refresh, 2500);
+    } else if (!anyActive && pollTimer) {
+      clearInterval(pollTimer); pollTimer = null;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function renderList() {
+  jobsCount.textContent = currentJobs.length;
+  if (currentJobs.length === 0) {
+    jobsGrid.innerHTML = `<div class="empty">No verifications yet — upload a packet above to get started.</div>`;
+    return;
+  }
+  jobsGrid.innerHTML = currentJobs.map(j => {
+    const overall = j.summary?.overall;
+    const statusClass = j.status === "done"
+      ? `done ${overall === "PASS" ? "pass" : "fail"}`
+      : j.status;
+    const statusText = j.status === "done" ? overall : j.status;
+    const tally = j.summary?.tally;
+    return `
+      <div class="job">
+        <div class="job-header">
+          <div class="job-filename" title="${escapeHtml(j.filename)}">${escapeHtml(j.filename)}</div>
+          <span class="status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="job-meta">${formatTime(j.created_at)}${j.summary?.customer ? " — " + escapeHtml(j.summary.customer) : ""}</div>
+        ${j.status === "running" || j.status === "queued" ? `<div class="progress-bar"><div class="progress-bar-inner"></div></div>` : ""}
+        ${tally ? `<div class="tally">
+          <span class="p">${tally.pass} pass</span>
+          <span class="f">${tally.fail} flags</span>
+          <span class="i">${tally.info} info</span>
+        </div>` : ""}
+        ${j.error ? `<div class="job-error">${escapeHtml(j.error)}</div>` : ""}
+        <div class="job-actions">
+          <button onclick="showDetail('${j.id}')">View</button>
+          ${Object.entries(j.artifacts || {}).map(([label, rel]) =>
+            `<a href="/api/jobs/${j.id}/files/${rel}" target="_blank">${label}</a>`
+          ).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDetail() {
+  const j = currentJobs.find(x => x.id === detailJobId);
+  if (!j) { detailBody.innerHTML = `<div class="card"><div class="empty">Job not found.</div></div>`; return; }
+  const s = j.summary;
+  const pdfRel = j.artifacts?.["Verified PDF"];
+
+  let subPacketsHtml = "";
+  if (s?.sub_packets?.length) {
+    subPacketsHtml = `
+      <table class="sp-table">
+        <thead><tr><th>#</th><th>WO</th><th>PO</th><th>Customer</th><th>Product</th><th>Cases</th><th>Pages</th></tr></thead>
+        <tbody>
+          ${s.sub_packets.map(sp => `
+            <tr>
+              <td>#${sp.index}</td>
+              <td>${escapeHtml(sp.wo || "—")}</td>
+              <td>${escapeHtml(sp.po || "—")}</td>
+              <td>${escapeHtml(sp.customer || "—")}</td>
+              <td>${escapeHtml(sp.product || "—")}</td>
+              <td>${sp.cases ?? "—"}</td>
+              <td>${(sp.pages || []).join(", ")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  let flagsHtml = "";
+  if (s?.flagged?.length) {
+    flagsHtml = `
+      <table class="flag-table">
+        <thead><tr><th>Status</th><th>Sub#</th><th>Check</th><th>Detail</th><th>Pages</th></tr></thead>
+        <tbody>
+          ${s.flagged.map(f => `
+            <tr class="flag-row ${f.status}">
+              <td><strong>${f.status.toUpperCase()}</strong></td>
+              <td>${f.sub_packet ?? ""}</td>
+              <td>${escapeHtml(f.name)}</td>
+              <td>${escapeHtml(f.detail)}</td>
+              <td>${(f.pages || []).join(", ")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  } else if (j.status === "done") {
+    flagsHtml = `<div class="empty" style="padding: 24px;">No flags or info notes raised.</div>`;
+  }
+
+  detailBody.innerHTML = `
+    <div class="card">
+      <h2>${escapeHtml(j.filename)} <span class="pill">${j.status === "done" ? s?.overall : j.status.toUpperCase()}</span></h2>
+      ${j.error ? `<div class="job-error">${escapeHtml(j.error)}</div>` : ""}
+      ${s ? `
+        <div class="detail-grid">
+          <div class="stat"><div class="stat-label">Pages</div><div class="stat-value">${s.pages}</div></div>
+          <div class="stat"><div class="stat-label">Sub-packets</div><div class="stat-value">${s.sub_packets.length}</div></div>
+          <div class="stat"><div class="stat-label">Checks passed</div><div class="stat-value" style="color:var(--green)">${s.tally.pass}</div></div>
+          <div class="stat"><div class="stat-label">Flags</div><div class="stat-value" style="color:var(--orange)">${s.tally.fail}</div></div>
+        </div>
+        <div class="job-actions" style="margin-bottom: 8px;">
+          ${Object.entries(j.artifacts || {}).map(([label, rel]) =>
+            `<a href="/api/jobs/${j.id}/files/${rel}" target="_blank">${label}</a>`
+          ).join("")}
+        </div>
+        ${subPacketsHtml ? `<h2 style="margin-top: 20px;">Sub-packets</h2>${subPacketsHtml}` : ""}
+        ${flagsHtml ? `<h2 style="margin-top: 20px;">Flags & info notes</h2>${flagsHtml}` : ""}
+        ${pdfRel ? `<h2 style="margin-top: 20px;">Verified PDF</h2>
+          <iframe class="preview-pdf" src="/api/jobs/${j.id}/files/${pdfRel}"></iframe>` : ""}
+      ` : `<div class="empty">Verification in progress…</div>`}
+    </div>
+  `;
+}
+
+function formatTime(iso) {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch (e) { return iso; }
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+refresh();
+setInterval(refresh, 8000);  // gentle background refresh even when no active job
+</script>
+</body>
+</html>

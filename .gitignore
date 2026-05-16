@@ -1,0 +1,31 @@
+# Job state, uploads, and generated outputs — must never be committed
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# Secrets — keep .env files local; set env vars in Render dashboard instead
+.env
+.env.*
+!.env.example
+
+# Pre-generated verifier runs (contain real customer data)
+sqr_verifier_v2/runs/
+
+# Sample PDFs sit outside the repo (customer data) — see README for how to test
+samples/
+
+# OCR vision cache — contains transcribed customer-packet content
+sqr_verifier_v2/cache/vision_cache.json
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

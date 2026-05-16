@@ -1,0 +1,7 @@
+data/
+**/__pycache__/
+**/*.pyc
+.git/
+.venv/
+.env
+sqr_verifier_v2/runs/
